@@ -21,7 +21,7 @@
           <v-toolbar
               flat
           >
-            <v-toolbar-title>My CRUD</v-toolbar-title>
+            <v-toolbar-title>My Contact List</v-toolbar-title>
             <v-divider
                 class="mx-4"
                 inset
@@ -44,67 +44,72 @@
                 </v-btn>
               </template>
               <v-card>
+                <v-alert :type="info.type" v-if="info.show">
+                  {{ info.text }}
+                </v-alert>
                 <v-card-title>
                   <span class="text-h5">{{ formTitle }}</span>
                 </v-card-title>
 
                 <v-card-text>
                   <v-container>
-                    <v-row>
-                      <v-col
-                          cols="12"
-                          sm="6"
-                          md="6"
-                      >
-                        <v-text-field
-                            v-model="editedItem.firstName"
-                            label="First Name"
-                            :rules="[rules.required]"
-                        ></v-text-field>
-                      </v-col>
-                      <v-col
-                          cols="12"
-                          sm="6"
-                          md="6"
-                      >
-                        <v-text-field
-                            v-model="editedItem.lastName"
-                            label="Last Name"
-                            :rules="[rules.required]"
-                        ></v-text-field>
-                      </v-col>
-                      <v-col
-                          cols="12"
-                          sm="6"
-                          md="6"
-                      >
-                        <v-text-field
-                            v-model="editedItem.age"
-                            label="Age"
-                        ></v-text-field>
-                      </v-col>
-                      <v-col
-                          cols="12"
-                          sm="6"
-                          md="6"
-                      >
-                        <v-text-field
-                            v-model="editedItem.phone"
-                            label="Phone"
-                        ></v-text-field>
-                      </v-col>
-                      <v-col
-                          cols="12"
-                          sm="6"
-                          md="4"
-                      >
-                        <v-text-field
-                            v-model="editedItem.email"
-                            label="E-mail"
-                            :rules="emailRules"
-                        ></v-text-field>
-                      </v-col>
-                    </v-row>
+                    <v-form ref="loginForm" v-model="valid" lazy-validation>
+                      <v-row>
+                        <v-col
+                            cols="12"
+                            sm="6"
+                            md="6"
+                        >
+                          <v-text-field
+                              v-model="editedItem.firstName"
+                              label="First Name"
+                              :rules="[rules.required]"
+                          ></v-text-field>
+                        </v-col>
+                        <v-col
+                            cols="12"
+                            sm="6"
+                            md="6"
+                        >
+                          <v-text-field
+                              v-model="editedItem.lastName"
+                              label="Last Name"
+                              :rules="[rules.required]"
+                          ></v-text-field>
+                        </v-col>
+                        <v-col
+                            cols="12"
+                            sm="6"
+                            md="6"
+                        >
+                          <v-text-field
+                              v-model="editedItem.age"
+                              label="Age"
+                          ></v-text-field>
+                        </v-col>
+                        <v-col
+                            cols="12"
+                            sm="6"
+                            md="6"
+                        >
+                          <v-text-field
+                              v-model="editedItem.phone"
+                              label="Phone"
+                          ></v-text-field>
+                        </v-col>
+                        <v-col
+                            cols="12"
+                            sm="6"
+                            md="4"
+                        >
+                          <v-text-field
+                              v-model="editedItem.email"
+                              label="E-mail"
+                              :rules="emailRules"
+                          ></v-text-field>
+                        </v-col>
+                      </v-row>
+                    </v-form>
                   </v-container>
                 </v-card-text>
 
@@ -120,6 +125,7 @@
                   <v-btn
                       color="blue darken-1"
                       text
+                      :disabled="!valid"
                       @click="save"
                   >
                     Save
@@ -182,6 +188,17 @@ export default {
   },
   name: 'HomeView',
   data: () => ({
+    valid: false,
+    info: {
+      show: false,
+      text: '',
+      type: '',
+    },
+    defaultInfo: {
+      show: false,
+      text: '',
+      type: '',
+    },
     emailRules: emailRules,
     rules: rules,
     search: '',
@@ -220,7 +237,7 @@ export default {
   }),
 
   computed: {
-    ...mapGetters('userManipulation',['userList']),
+    ...mapGetters('userManipulation', ['userList']),
     formTitle() {
       return this.editedIndex === -1 ? 'New Item' : 'Edit Item'
     },
@@ -242,8 +259,8 @@ export default {
   methods: {
     ...mapActions('userManipulation', ['getContactList', 'addUserToList', 'setEditableContact', 'removeContactFromList']),
 
-    initialize() {
-      this.getContactList();
+    async initialize() {
+      await this.getContactList();
     },
 
     editItem(item) {
@@ -272,6 +289,7 @@ export default {
       this.$nextTick(() => {
         this.editedItem = Object.assign({}, this.defaultItem)
         this.editedIndex = -1
+        this.info = {...this.defaultInfo}
       })
     },
 
@@ -285,13 +303,36 @@ export default {
 
     async save() {
       if (this.editedIndex > -1) {
-        await this.setEditableContact(this.editedItem)
-        // Object.assign(this.userList[this.editedIndex], )
+        const result = await this.setEditableContact(this.editedItem)
+        if (result) {
+          Object.assign(this.userList[this.editedIndex], result)
+          this.close()
+        } else {
+
+          this.info =
+              {
+                show: true,
+                type: 'error',
+                text: ' Ups something vent wrong !'
+
+              }
+        }
+
       } else {
-        await this.addUserToList(this.editedItem);
-        // this.items.push(this.editedItem)
+        const result = await this.addUserToList(this.editedItem);
+        if (!result) {
+          this.info =
+              {
+                show: true,
+                type: 'error',
+                text: ' Ups something vent wrong !'
+
+              }
+        } else {
+          this.close()
+        }
       }
-      this.close()
+
     },
   },
 

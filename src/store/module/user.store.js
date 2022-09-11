@@ -31,17 +31,22 @@ const getters = {
 const actions = {
     async setEditableContact({commit}, editableContact) {
         const editedContact = await userService.updateContact(editableContact);
-        console.log(editedContact);
+
         if (!editedContact.code) {
             commit("EDIT_CONTACT", editedContact);
+            return editedContact;
         }
+        return null;
+
     },
     async addUserToList({commit}, contactData) {
         const newContactData = {...contactData, owner: state.user.id};
         const newContact = await userService.addNewContact(newContactData);
         if (!newContact.code) {
             commit('ADD_USER_TO_LIST', newContact);
+            return newContact;
         }
+        return null;
 
     },
     async removeContactFromList({commit}, contactId) {
