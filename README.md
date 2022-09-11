@@ -22,3 +22,14 @@ yarn lint
 
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
+
+
+
+docker run
+--name blocksiDB
+-p 5455:5432
+-e POSTGRES_USER=blocksi
+-e POSTGRES_PASSWORD=blocksi
+-e POSTGRES_DB=blocksiDB
+-d
+postgres
